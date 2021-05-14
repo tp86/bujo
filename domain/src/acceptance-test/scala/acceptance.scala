@@ -12,14 +12,14 @@ class DomainAcceptanceTest extends AnyFeatureSpec, GivenWhenThen:
 
   Feature("Note") {
     Scenario("User creates note with valid text") {
-      Given("User provides valid text")
+      Given("valid text")
       val text: String = "Some valid note text"
       assert(validateText(text).isRight)
 
-      When("User creates note")
+      When("user creates note")
       val note = Note.create(text)
 
-      Then("Note is created")
+      Then("note is created")
       note match
         case Right(note) => {
           assert(note.isInstanceOf[Note])
@@ -32,19 +32,47 @@ class DomainAcceptanceTest extends AnyFeatureSpec, GivenWhenThen:
     }
 
     Scenario("User creates note with invalid text") {
-      Given("User provides invalid text")
+      Given("invalid text")
       val text = "invalid note text"
       val invalidText =
         text.repeat(text.length * (MAX_NOTE_TEXT_LENGTH / text.length) + 1)
       assert(validateText(invalidText).isLeft)
 
-      When("User tries to create note")
+      When("user tries to create note")
       val note = Note.create(invalidText)
 
-      Then("Note text validation error with description is returned")
+      Then("note text validation error with description is returned")
       note match
         case Left(errors) =>
           assert(errors.exists(_.isInstanceOf[NoteTextValidationError]))
         case Right(_) => fail("Note should not be created with invalid text")
+    }
+
+    Scenario("User searches for notes matching text") {
+      Given("existing notes")
+      val notes = List("Some note text", "Interesting text", "Interesting note")
+        .map(Note.create andThen {
+          case Left(errs) =>
+            fail(
+              s"Failed with errors:\n\t${errs.map(_.message).mkString("\n\t")}"
+            )
+          case Right(note) => note
+        })
+      import bujo.domain.api.NoteRepository
+      given NoteRepository = new NoteRepository {
+        def save(note: Note) = ???
+        def getAll = notes
+      }
+
+      When("user searches for notes using query text")
+      val notesFound = Note.search("Interesting")
+
+      Then("notes containing query text are returned")
+      assert(notesFound.size == 2)
+      assert(
+        notesFound
+          .map(_.text)
+          .containsSlice(Seq("Interesting text", "Interesting note"))
+      )
     }
   }
