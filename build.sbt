@@ -1,5 +1,7 @@
 ThisBuild / version := "0.1.0-SNAPSHOT"
-ThisBuild / scalaVersion := "3.0.0-RC3"
+ThisBuild / scalaVersion := "3.0.0-RC2"
+
+lazy val scalatest = "org.scalatest" %% "scalatest" % "3.2.7"
 
 lazy val bujo = (project in file("."))
   .aggregate(domain, repo, util)
@@ -9,13 +11,14 @@ lazy val bujo = (project in file("."))
 
 lazy val util = project
   .settings(
-    name := "bujo-util"
+    name := "bujo-util",
   )
 
 lazy val domain = project
   .dependsOn(util)
   .settings(
     name := "bujo-domain",
+    libraryDependencies += scalatest % Test,
   )
 
 lazy val repo = (project in file("repository"))
