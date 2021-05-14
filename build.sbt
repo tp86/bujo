@@ -11,3 +11,9 @@ lazy val domain = project
   .settings(
     name := "bujo-domain",
   )
+
+lazy val repo = (project in file("repository"))
+  .dependsOn(domain)
+  .settings(
+    name := "bujo-repository",
+  )
