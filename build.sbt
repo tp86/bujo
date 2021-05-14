@@ -2,7 +2,7 @@ ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / scalaVersion := "3.0.0-RC3"
 
 lazy val bujo = (project in file("."))
-  .aggregate(domain)
+  .aggregate(domain, repo)
   .settings(
     name := "bujo",
   )
