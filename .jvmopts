@@ -1,0 +1,3 @@
+-Xmx1536M
+-Xss1M
+-XX:+UseG1GC
