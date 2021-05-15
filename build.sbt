@@ -35,7 +35,18 @@ lazy val domain = project
   )
 
 lazy val repo = (project in file("repository"))
-  .dependsOn(domain)
+  .dependsOn(domain, schemas)
   .settings(
     name := "bujo-repository",
+  )
+
+lazy val migrations = (project in file("repository/migrations"))
+  .settings(
+    name := "bujo-migrations",
+  )
+
+lazy val schemas = (project in file("repository/schemas"))
+  .dependsOn(migrations)
+  .settings(
+    name := "bujo-schemas",
   )
