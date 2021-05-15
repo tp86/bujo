@@ -3,7 +3,7 @@ import bloop.integrations.sbt.BloopDefaults
 ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / scalaVersion := "3.0.0-RC2"
 
-lazy val AccTest = config("acceptance-test") extend(Test)
+lazy val AccTest = config("acceptance-test") extend (Test)
 lazy val accTest = taskKey[Unit]("Executes acceptance tests.")
 
 lazy val scalatest = "org.scalatest" %% "scalatest" % "3.2.7"
@@ -30,6 +30,8 @@ lazy val domain = project
       scalatest % AccTest,
     ),
     Test / accTest := (AccTest / test).value,
+    Test / jacocoReportSettings := JacocoReportSettings()
+      .withFormats(JacocoReportFormats.ScalaHTML),
   )
 
 lazy val repo = (project in file("repository"))
