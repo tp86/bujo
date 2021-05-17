@@ -1,3 +1,5 @@
+import pureconfig.generic.auto._
+import ProjectConfig._
 import bloop.integrations.sbt.BloopDefaults
 
 ThisBuild / version := "0.1.0-SNAPSHOT"
@@ -41,6 +43,9 @@ lazy val repo = (project in file("repository"))
   .aggregate(schemas)
   .settings(
     name := "bujo-repository",
+    Compile / projectConfig := loadConfig[RepositoryConfig](
+      (Compile / resourceDirectory).value / "repository.conf",
+    ),
   )
 
 lazy val schemasDeps = Seq(
@@ -63,30 +68,31 @@ lazy val schemas = (project in file("repository/schemas"))
     scalaVersion := "2.13.5",
     flywayUrl := dbConfig("dbUrl"),
     libraryDependencies ++= schemasDeps,
-    Compile / sourceGenerators += Def.task {
-      val cp        = (Compile / dependencyClasspath).value
-      val outputDir = (Compile / sourceManaged).value
-      runner.value
-        .run(
-          "slick.codegen.SourceCodeGenerator",
-          cp.files,
-          Array(
-            dbConfig("slickDriver"),
-            dbConfig("jdbcDriver"),
-            dbConfig("dbUrl"),
-            outputDir.getPath,
-            dbConfig("slickPkg"),
-          ),
-          streams.value.log,
-        )
-        .get
-      Seq(outputDir / dbConfig("slickPkg").replace('.', '/') / "Tables.scala")
-    }.taskValue,
-    compile := Def.taskDyn {
-      val comp = (Compile / compile).value
-      Def.task {
-        flywayMigrate.value
-        comp
-      }
-    }.value,
+    compile := Def
+      .sequential(
+        flywayMigrate,
+        Def.task {
+          val cp        = (Compile / dependencyClasspath).value
+          val outputDir = (Compile / sourceManaged).value
+          runner.value
+            .run(
+              "slick.codegen.SourceCodeGenerator",
+              cp.files,
+              Seq(
+                dbConfig("slickDriver"),
+                dbConfig("jdbcDriver"),
+                dbConfig("dbUrl"),
+                outputDir.getPath,
+                dbConfig("slickPkg"),
+              ),
+              streams.value.log,
+            )
+            .get
+          Seq(
+            outputDir / dbConfig("slickPkg").replace('.', '/') / "Tables.scala",
+          )
+        },
+        Compile / compile,
+      )
+      .value,
   )
