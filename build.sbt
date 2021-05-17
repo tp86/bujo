@@ -56,9 +56,6 @@ lazy val dbConfig = Map(
   "slickPkg"    -> "bujo.repository.schemas",
 )
 
-lazy val slickCodegen =
-  taskKey[Seq[File]]("Generate schema model based on database.")
-
 lazy val schemas = (project in file("repository/schemas"))
   .enablePlugins(FlywayPlugin)
   .settings(
@@ -66,7 +63,7 @@ lazy val schemas = (project in file("repository/schemas"))
     scalaVersion := "2.13.5",
     flywayUrl := dbConfig("dbUrl"),
     libraryDependencies ++= schemasDeps,
-    slickCodegen := {
+    Compile / sourceGenerators += Def.task {
       val cp        = (Compile / dependencyClasspath).value
       val outputDir = (Compile / sourceManaged).value
       runner.value
@@ -84,8 +81,7 @@ lazy val schemas = (project in file("repository/schemas"))
         )
         .get
       Seq(outputDir / dbConfig("slickPkg").replace('.', '/') / "Tables.scala")
-    },
-    Compile / sourceGenerators += slickCodegen.taskValue,
+    }.taskValue,
     compile := Def.taskDyn {
       val comp = (Compile / compile).value
       Def.task {
