@@ -43,9 +43,6 @@ lazy val repo = (project in file("repository"))
   .aggregate(schemas)
   .settings(
     name := "bujo-repository",
-    Compile / projectConfig := loadConfig[RepositoryConfig](
-      (Compile / resourceDirectory).value / "repository.conf",
-    ),
   )
 
 lazy val schemasDeps = Seq(
@@ -54,19 +51,15 @@ lazy val schemasDeps = Seq(
   "org.slf4j" % "slf4j-nop" % "2.0.0-alpha1",
 )
 
-lazy val dbConfig = Map(
-  "dbUrl"       -> "jdbc:sqlite:db/bujo.db",
-  "slickDriver" -> "slick.jdbc.SQLiteProfile",
-  "jdbcDriver"  -> "org.sqlite.JDBC",
-  "slickPkg"    -> "bujo.repository.schemas",
-)
-
 lazy val schemas = (project in file("repository/schemas"))
   .enablePlugins(FlywayPlugin)
   .settings(
     name := "bujo-schemas",
     scalaVersion := "2.13.5",
-    flywayUrl := dbConfig("dbUrl"),
+    Compile / projectConfig := loadConfig[SchemasConfig](
+      (Compile / resourceDirectory).value / "codegen.conf"
+    ),
+    flywayUrl := (Compile / projectConfig).value.asInstanceOf[SchemasConfig].db.url,
     libraryDependencies ++= schemasDeps,
     compile := Def
       .sequential(
@@ -74,22 +67,23 @@ lazy val schemas = (project in file("repository/schemas"))
         Def.task {
           val cp        = (Compile / dependencyClasspath).value
           val outputDir = (Compile / sourceManaged).value
+          val config    = (Compile / projectConfig).value.asInstanceOf[SchemasConfig]
           runner.value
             .run(
               "slick.codegen.SourceCodeGenerator",
               cp.files,
               Seq(
-                dbConfig("slickDriver"),
-                dbConfig("jdbcDriver"),
-                dbConfig("dbUrl"),
+                config.slick.profile,
+                config.db.jdbcDriver,
+                config.db.url,
                 outputDir.getPath,
-                dbConfig("slickPkg"),
+                config.slick.codegen.`package`,
               ),
               streams.value.log,
             )
             .get
           Seq(
-            outputDir / dbConfig("slickPkg").replace('.', '/') / "Tables.scala",
+            outputDir / config.slick.codegen.`package`.replace('.', '/') / "Tables.scala",
           )
         },
         Compile / compile,
