@@ -7,6 +7,9 @@ ThisBuild / scalaVersion := "3.0.0-RC2"
 
 lazy val AccTest = config("acceptance-test") extend (Test)
 lazy val accTest = taskKey[Unit]("Executes acceptance tests.")
+lazy val migrateUpdateSchemas = taskKey[xsbti.compile.CompileAnalysis](
+  "Applies database migrations, generates schemas and recompiles them.",
+)
 
 lazy val scalatest     = "org.scalatest"      %% "scalatest"     % "3.2.7"
 lazy val sqliteJdbc    = "org.xerial"          % "sqlite-jdbc"   % "3.34.0"
@@ -57,17 +60,21 @@ lazy val schemas = (project in file("repository/schemas"))
     name := "bujo-schemas",
     scalaVersion := "2.13.5",
     Compile / projectConfig := loadConfig[SchemasConfig](
-      (Compile / resourceDirectory).value / "codegen.conf"
+      (Compile / resourceDirectory).value / "codegen.conf",
     ),
-    flywayUrl := (Compile / projectConfig).value.asInstanceOf[SchemasConfig].db.url,
+    flywayUrl := (Compile / projectConfig).value
+      .asInstanceOf[SchemasConfig]
+      .db
+      .url,
     libraryDependencies ++= schemasDeps,
-    compile := Def
+    Compile / migrateUpdateSchemas := Def
       .sequential(
         flywayMigrate,
         Def.task {
           val cp        = (Compile / dependencyClasspath).value
           val outputDir = (Compile / sourceManaged).value
-          val config    = (Compile / projectConfig).value.asInstanceOf[SchemasConfig]
+          val config =
+            (Compile / projectConfig).value.asInstanceOf[SchemasConfig]
           runner.value
             .run(
               "slick.codegen.SourceCodeGenerator",
@@ -83,7 +90,8 @@ lazy val schemas = (project in file("repository/schemas"))
             )
             .get
           Seq(
-            outputDir / config.slick.codegen.`package`.replace('.', '/') / "Tables.scala",
+            outputDir / config.slick.codegen.`package`
+              .replace('.', '/') / "Tables.scala",
           )
         },
         Compile / compile,
