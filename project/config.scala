@@ -1,6 +1,6 @@
 import pureconfig._
-import sbt.File
 import sbt.Def.settingKey
+import sbt.File
 
 trait ProjectConfig
 trait ProjectConfigDefault[C <: ProjectConfig] {
@@ -17,9 +17,9 @@ object ProjectConfig {
       .file(configPath)
       .load[C]
       .getOrElse(configObj.default)
-    }
-    lazy val projectConfig =
-      settingKey[ProjectConfig]("Typesafe config file with project settings.")
+  }
+  lazy val projectConfig =
+    settingKey[ProjectConfig]("Typesafe config file with project settings.")
 }
 
 case class RepositoryConfig(
@@ -35,14 +35,14 @@ object RepositoryConfig extends ProjectConfigDefault[RepositoryConfig] {
 
 case class DbConfig(
     url: String,
-    jdbcDriver: String)
+    driver: String)
 object DbConfig {
   val default: DbConfig = DbConfig("jdbc:sqlite:default.db", "org.sqlite.JDBC")
 }
 class SlickConfig(val profile: String)
 object SlickConfig {
-  def apply(profile: String): SlickConfig          = new SlickConfig(profile)
-  val default: SlickConfig = SlickConfig("slick.jdbc.SQLiteProfile")
+  def apply(profile: String): SlickConfig = new SlickConfig(profile)
+  val default: SlickConfig                = SlickConfig("slick.jdbc.SQLiteProfile")
 }
 
 case class SchemasConfig(
@@ -64,4 +64,3 @@ case class SchemasSlickConfig(
     override val profile: String,
     val codegen: SlickCodegenConfig)
     extends SlickConfig(profile)
-
