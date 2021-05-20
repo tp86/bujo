@@ -1,5 +1,4 @@
-import pureconfig.generic.auto._
-import ProjectConfig._
+import _root_.sbt.internal.util.ManagedLogger
 import bloop.integrations.sbt.BloopDefaults
 
 ThisBuild / version := "0.1.0-SNAPSHOT"
@@ -48,20 +47,49 @@ lazy val repo = (project in file("repository"))
 lazy val schemasDeps = Seq(
   sqliteJdbc,
   slick_codegen,
-  "org.slf4j" % "slf4j-nop" % "2.0.0-alpha1",
+  "org.slf4j"      % "slf4j-nop" % "2.0.0-alpha1",
+  "com.h2database" % "h2"        % "1.4.200" % Test,
 )
 
-lazy val updateSchemas = taskKey[xsbti.compile.CompileAnalysis](
+lazy val schemaUpdate = taskKey[xsbti.compile.CompileAnalysis](
   "Migrates database, generates schemas and compiles.",
 )
+lazy val schemaGenerator = taskKey[Seq[File]](
+  "Generates schemas based on database.",
+)
+lazy val dbConfig = settingKey[Map[String, String]](
+  "DB settings for schema generation.",
+)
+
+def generateSchemas(
+    dbConfig: Map[String, String],
+    cp: Classpath,
+    outputDir: File,
+    runner: ScalaRun,
+    logger: ManagedLogger,
+  ): Seq[File] = {
+  runner
+    .run(
+      "slick.codegen.SourceCodeGenerator",
+      cp.files,
+      Seq(
+        dbConfig("profile"),
+        dbConfig("driver"),
+        dbConfig("url"),
+        outputDir.getPath,
+        "bujo.repository.schemas",
+      ),
+      logger,
+    )
+    .get
+  Seq(outputDir / "bujo/repository/schemas" / "Tables.scala")
+}
+
 lazy val schemas = (project in file("repository/schemas"))
   .enablePlugins(FlywayPlugin)
   .settings(
     name := "bujo-schemas",
     scalaVersion := "2.13.5",
-    Compile / projectConfig := loadConfig[SchemasConfig](
-      baseDirectory.value / "build_config/codegen.conf",
-    ),
     // flywayMigrate depends on flywayClasspath which is dynamic task that
     // triggers compile (via fullClasspath) if any of flywayLocations entries
     // is a classpath entry
@@ -69,36 +97,25 @@ lazy val schemas = (project in file("repository/schemas"))
     flywayLocations := Seq(
       s"filesystem:${(baseDirectory.value / "migrations").getPath}",
     ),
-    flywayUrl := (Compile / projectConfig).value
-      .asInstanceOf[SchemasConfig]
-      .db
-      .url,
+    Test / flywayLocations := flywayLocations.value,
+    flywayUrl := s"""jdbc:sqlite:${(ThisBuild / baseDirectory).value / "db/bujo.db"}""",
+    Test / flywayUrl := "jdbc:h2:mem:test",
     libraryDependencies ++= schemasDeps,
+    Compile / dbConfig := Map(
+      "url"     -> flywayUrl.value,
+      "profile" -> "slick.jdbc.SQLiteProfile",
+      "driver"  -> "org.sqlite.JDBC",
+    ),
     Compile / sourceGenerators += Def.task {
-      val cp        = (Compile / dependencyClasspath).value
-      val outputDir = (Compile / sourceManaged).value
-      val config =
-        (Compile / projectConfig).value.asInstanceOf[SchemasConfig]
-      runner.value
-        .run(
-          "slick.codegen.SourceCodeGenerator",
-          cp.files,
-          Seq(
-            config.slick.profile,
-            config.db.jdbcDriver,
-            config.db.url,
-            outputDir.getPath,
-            config.slick.codegen.`package`,
-          ),
-          streams.value.log,
-        )
-        .get
-      Seq(
-        outputDir / config.slick.codegen.`package`
-          .replace('.', '/') / "Tables.scala",
+      generateSchemas(
+        (Compile / dbConfig).value,
+        (Compile / dependencyClasspath).value,
+        (Compile / sourceManaged).value,
+        runner.value,
+        streams.value.log,
       )
     },
-    Compile / updateSchemas := Def
+    Compile / schemaUpdate := Def
       .sequential(
         flywayMigrate,
         Compile / compile,
