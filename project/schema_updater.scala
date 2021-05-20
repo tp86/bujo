@@ -13,7 +13,7 @@ object SchemaUpdater {
   lazy val schemaUpdateConfig = settingKey[Config](
     "Configuration settings for schema code generator.",
   )
-  private def generateSchema(
+  /*private*/ def generateSchema(
       config: Config,
       classpath: Classpath,
       outputDir: File,
@@ -25,9 +25,9 @@ object SchemaUpdater {
         "slick.codegen.SourceCodeGenerator",
         classpath.files,
         Seq(
-          config.url,
-          config.driver,
           config.profile,
+          config.driver,
+          config.url,
           outputDir.getPath,
           config.outputPkg,
         ),
