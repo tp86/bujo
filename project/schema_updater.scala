@@ -2,15 +2,15 @@ import sbt._
 import sbt.Keys._
 import sbt.internal.util.ManagedLogger
 
-object SchemaUpdater {
+object SchemaUpdater_ {
   case class SchemaUpdaterConfig(
       url: String,
       driver: String,
       profile: String,
       outputPkg: String)
-  lazy val schemaUpdate =
+  lazy val schemaUpdate_ =
     taskKey[Seq[File]]("Generates schemas based on migrated database.")
-  lazy val schemaUpdateConfig = settingKey[SchemaUpdaterConfig](
+  lazy val schemaUpdateConfig_ = settingKey[SchemaUpdaterConfig](
     "Configuration settings for schema code generator.",
   )
   /*private*/
