@@ -71,7 +71,7 @@ lazy val schemas = (project in file("repository/schemas"))
     flywayUrl := s"""jdbc:sqlite:${(ThisBuild / baseDirectory).value / "db/bujo.db"}""",
     Test / flywayUrl := "jdbc:h2:mem:test",
     libraryDependencies ++= schemasDeps,
-    Compile / schemaUpdateConfig := Config(
+    Compile / schemaUpdateConfig := SchemaUpdaterConfig(
       flywayUrl.value,
       "org.sqlite.JDBC",
       "slick.jdbc.SQLiteProfile",
@@ -84,6 +84,6 @@ lazy val schemas = (project in file("repository/schemas"))
         (Compile / sourceManaged).value,
         runner.value,
         streams.value.log,
-        )
+      )
     },
   )

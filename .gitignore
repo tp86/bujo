@@ -7,3 +7,4 @@ target/
 .metals/
 project/**/metals.sbt
 /db/
+/.repo/
