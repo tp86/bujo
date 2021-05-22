@@ -1,4 +1,3 @@
-import SchemaUpdater_._
 import bloop.integrations.sbt.BloopDefaults
 
 ThisBuild / version := "0.1.0-SNAPSHOT"
@@ -51,10 +50,6 @@ lazy val schemasDeps = Seq(
   "com.h2database" % "h2"        % "1.4.200" % Test,
 )
 
-// lazy val schemaGenerator = taskKey[Seq[File]](
-  // "Generates schemas based on database.",
-// )
-
 lazy val schemas = (project in file("repository/schemas"))
   .enablePlugins(SchemaUpdater)
   .settings(
@@ -67,23 +62,10 @@ lazy val schemas = (project in file("repository/schemas"))
     flywayLocations := Seq(
       s"filesystem:${(baseDirectory.value / "migrations").getPath}",
     ),
-    Test / flywayLocations := flywayLocations.value,
     flywayUrl := s"""jdbc:sqlite:${(ThisBuild / baseDirectory).value / "db/bujo.db"}""",
     Test / flywayUrl := "jdbc:h2:mem:test",
     libraryDependencies ++= schemasDeps,
-    Compile / schemaUpdateConfig_ := SchemaUpdaterConfig(
-      flywayUrl.value,
-      "org.sqlite.JDBC",
-      "slick.jdbc.SQLiteProfile",
-      "bujo.repository.schemas",
-    ),
-    Compile / schemaUpdate_ := {
-      generateSchema(
-        (Compile / schemaUpdateConfig_).value,
-        (Compile / dependencyClasspath).value,
-        (Compile / sourceManaged).value,
-        runner.value,
-        streams.value.log,
-      )
-    },
+    Compile / schemaUpdateDbDriver := "org.sqlite.JDBC",
+    Compile / schemaUpdateDbProfile := "slick.jdbc.SQLiteProfile",
+    Compile / schemaUpdateOutputPackage := "bujo.repository.schema",
   )
