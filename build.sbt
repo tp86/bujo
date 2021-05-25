@@ -60,9 +60,10 @@ lazy val schemas = (project in file("repository/schemas"))
     flywayLocations := Seq(
       s"filesystem:${(baseDirectory.value / "migrations").getPath}",
     ),
-    flywayUrl := s"""jdbc:sqlite:${(ThisBuild / baseDirectory).value / "db/bujo.db"}""",
-    Test / flywayUrl := "jdbc:h2:mem:test",
-    libraryDependencies ++= schemasDeps,
+    Compile / flywayUrl := s"""jdbc:sqlite:${(ThisBuild / baseDirectory).value / "db/bujo.db"}""",
     Compile / schemaUpdateDbProfile := SchemaUpdater.SqliteProfile,
-    Compile / schemaUpdateOutputPackage := "bujo.repository.schema",
+    Test / flywayUrl := "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE",
+    Test / schemaUpdateDbProfile := SchemaUpdater.H2Profile,
+    libraryDependencies ++= schemasDeps,
+    schemaUpdateOutputPackage := "bujo.repository.schema",
   )

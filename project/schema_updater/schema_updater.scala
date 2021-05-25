@@ -45,6 +45,7 @@ object SchemaUpdater extends AutoPlugin {
       inConfig(Test)(schemaUpdateDefaults) ++
       Seq(
         Compile / schemaUpdate := {
+          val _ = (Compile / flywayMigrate).value
           generateSchema(
             Config(
               (Compile / schemaUpdateDbUrl).value,
@@ -58,6 +59,7 @@ object SchemaUpdater extends AutoPlugin {
           )
         },
         Test / schemaUpdate := {
+          val _ = (Test / flywayMigrate).value
           generateSchema(
             Config(
               (Test / schemaUpdateDbUrl).value,
@@ -70,6 +72,8 @@ object SchemaUpdater extends AutoPlugin {
             streams.value.log,
           )
         },
+        Compile / sourceGenerators += Compile / schemaUpdate,
+        Test / sourceGenerators += Test / schemaUpdate,
         Compile / schemaUpdateDbUrl := (Compile / flywayUrl).value,
         Test / schemaUpdateDbUrl := (Test / flywayUrl).value,
         Test / flywayLocations := flywayLocations.value,
