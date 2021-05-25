@@ -8,80 +8,82 @@ import sbt.internal.util.ManagedLogger
 
 object SchemaUpdater extends AutoPlugin {
   override def requires = FlywayPlugin
-  override def trigger = noTrigger
+  override def trigger  = noTrigger
 
   import FlywayPlugin.autoImport._
 
   object autoImport {
     val schemaUpdate =
       taskKey[Seq[File]]("Generates schemas based on migrated database.")
-    val schemaUpdateDbUrl    = settingKey[String]("JDBC url to database.")
-    val schemaUpdateDbDriver = settingKey[String]("JDBC driver for database.")
+    val schemaUpdateDbUrl = settingKey[String]("JDBC url to database.")
     val schemaUpdateDbProfile =
-      settingKey[String]("Slick profile for database.")
+      settingKey[DbProfile]("Profile for database.")
     val schemaUpdateOutputPackage =
       settingKey[String]("Package to generate schema to.")
-    
+
     lazy val schemaUpdateDefaults: Seq[Def.Setting[_]] = Seq(
       schemaUpdateDbUrl := "",
-      schemaUpdateDbDriver := {
-        println("Driver from flywayDriver if set or default H2")
-        ""
-      },
-      schemaUpdateDbProfile := {
-        println("Profile to set based on driver function")
-        ""
-      },
+      schemaUpdateDbProfile := EmptyProfile,
       schemaUpdateOutputPackage := "generated.schema",
     )
   }
 
   import autoImport._
 
-  override lazy val projectSettings = 
+  case class DbProfile(
+      driver: String,
+      profile: String)
+
+  private object EmptyProfile extends DbProfile("", "")
+  object H2Profile            extends DbProfile("org.h2.Driver", "slick.jdbc.H2Profile")
+  object SqliteProfile
+      extends DbProfile("org.sqlite.JDBC", "slick.jdbc.SQLiteProfile")
+
+  override lazy val projectSettings =
     schemaUpdateDefaults ++
-    inConfig(Compile)(schemaUpdateDefaults) ++
-    inConfig(Test)(schemaUpdateDefaults) ++
-    Seq(
-      Compile / schemaUpdate := {
-        generateSchema(
-          Config(
-            (Compile / schemaUpdateDbUrl).value,
-            (Compile / schemaUpdateDbDriver).value,
-            (Compile / schemaUpdateDbProfile).value,
-            (Compile / schemaUpdateOutputPackage).value,
-          ),
-          (Compile / dependencyClasspath).value,
-          (Compile / sourceManaged).value,
-          runner.value,
-          streams.value.log,
-        )
-      },
-      Test / schemaUpdate := {
-        generateSchema(
-          Config(
-            (Test / schemaUpdateDbUrl).value,
-            (Test / schemaUpdateDbDriver).value,
-            (Test / schemaUpdateDbProfile).value,
-            (Test / schemaUpdateOutputPackage).value,
-          ),
-          (Test / dependencyClasspath).value,
-          (Test / sourceManaged).value,
-          runner.value,
-          streams.value.log,
-        )
-      },
-      Compile / schemaUpdateDbUrl := (Compile / flywayUrl).value,
-      Test / schemaUpdateDbUrl := (Test / flywayUrl).value,
-      Test / flywayLocations := flywayLocations.value,
-      Compile / schemaUpdateOutputPackage := schemaUpdateOutputPackage.value,
-      Test / schemaUpdateOutputPackage := schemaUpdateOutputPackage.value,
-    )
+      inConfig(Compile)(schemaUpdateDefaults) ++
+      inConfig(Test)(schemaUpdateDefaults) ++
+      Seq(
+        Compile / schemaUpdate := {
+          generateSchema(
+            Config(
+              (Compile / schemaUpdateDbUrl).value,
+              (Compile / schemaUpdateDbProfile).value,
+              (Compile / schemaUpdateOutputPackage).value,
+            ),
+            (Compile / dependencyClasspath).value,
+            (Compile / sourceManaged).value,
+            runner.value,
+            streams.value.log,
+          )
+        },
+        Test / schemaUpdate := {
+          generateSchema(
+            Config(
+              (Test / schemaUpdateDbUrl).value,
+              (Test / schemaUpdateDbProfile).value,
+              (Test / schemaUpdateOutputPackage).value,
+            ),
+            (Test / dependencyClasspath).value,
+            (Test / sourceManaged).value,
+            runner.value,
+            streams.value.log,
+          )
+        },
+        Compile / schemaUpdateDbUrl := (Compile / flywayUrl).value,
+        Test / schemaUpdateDbUrl := (Test / flywayUrl).value,
+        Test / flywayLocations := flywayLocations.value,
+        Compile / schemaUpdateOutputPackage := schemaUpdateOutputPackage.value,
+        Test / schemaUpdateOutputPackage := schemaUpdateOutputPackage.value,
+        libraryDependencies ++= Seq(
+          "com.typesafe.slick" %% "slick-codegen" % "3.3.3",
+          "org.slf4j"           % "slf4j-nop"     % "2.0.0-alpha1",
+        ),
+      )
 
   private case class Config(
       url: String,
-      driver: String,
-      profile: String,
+      profile: DbProfile,
       outputPkg: String)
 
   private def generateSchema(
@@ -96,8 +98,8 @@ object SchemaUpdater extends AutoPlugin {
         "slick.codegen.SourceCodeGenerator",
         classpath.files,
         Seq(
-          config.profile,
-          config.driver,
+          config.profile.profile,
+          config.profile.driver,
           config.url,
           outputDir.getPath,
           config.outputPkg,

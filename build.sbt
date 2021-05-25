@@ -6,9 +6,9 @@ ThisBuild / scalaVersion := "3.0.0-RC2"
 lazy val AccTest = config("acceptance-test") extend (Test)
 lazy val accTest = taskKey[Unit]("Executes acceptance tests.")
 
-lazy val scalatest     = "org.scalatest"      %% "scalatest"     % "3.2.7"
-lazy val sqliteJdbc    = "org.xerial"          % "sqlite-jdbc"   % "3.34.0"
-lazy val slick_codegen = "com.typesafe.slick" %% "slick-codegen" % "3.3.3"
+lazy val scalatest  = "org.scalatest" %% "scalatest"   % "3.2.7"
+lazy val sqliteJdbc = "org.xerial"     % "sqlite-jdbc" % "3.34.0"
+lazy val h2         = "com.h2database" % "h2"          % "1.4.200"
 
 lazy val bujo = (project in file("."))
   .aggregate(domain, repo, util)
@@ -45,9 +45,7 @@ lazy val repo = (project in file("repository"))
 
 lazy val schemasDeps = Seq(
   sqliteJdbc,
-  slick_codegen,
-  "org.slf4j"      % "slf4j-nop" % "2.0.0-alpha1",
-  "com.h2database" % "h2"        % "1.4.200" % Test,
+  h2 % Test,
 )
 
 lazy val schemas = (project in file("repository/schemas"))
@@ -65,7 +63,6 @@ lazy val schemas = (project in file("repository/schemas"))
     flywayUrl := s"""jdbc:sqlite:${(ThisBuild / baseDirectory).value / "db/bujo.db"}""",
     Test / flywayUrl := "jdbc:h2:mem:test",
     libraryDependencies ++= schemasDeps,
-    Compile / schemaUpdateDbDriver := "org.sqlite.JDBC",
-    Compile / schemaUpdateDbProfile := "slick.jdbc.SQLiteProfile",
+    Compile / schemaUpdateDbProfile := SchemaUpdater.SqliteProfile,
     Compile / schemaUpdateOutputPackage := "bujo.repository.schema",
   )
