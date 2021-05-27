@@ -15,6 +15,10 @@ object SchemaUpdater extends AutoPlugin {
   object autoImport {
     val schemaUpdate =
       taskKey[Seq[File]]("Generates schemas based on migrated database.")
+    val schemaUpdateMigrations =
+      settingKey[Seq[String]](
+        "Locations (paths as strings) to scan recursively for migrations.",
+      )
     val schemaUpdateDbUrl = settingKey[String]("JDBC url to database.")
     val schemaUpdateDbProfile =
       settingKey[DbProfile]("Profile for database.")
@@ -22,6 +26,7 @@ object SchemaUpdater extends AutoPlugin {
       settingKey[String]("Package to generate schema to.")
 
     lazy val schemaUpdateDefaults: Seq[Def.Setting[_]] = Seq(
+      schemaUpdateMigrations := Seq("migrations"),
       schemaUpdateDbUrl := "",
       schemaUpdateDbProfile := EmptyProfile,
       schemaUpdateOutputPackage := "generated.schema",
@@ -62,6 +67,14 @@ object SchemaUpdater extends AutoPlugin {
         libraryDependencies ++= Seq(
           "com.typesafe.slick" %% "slick-codegen" % "3.3.3",
           "org.slf4j"           % "slf4j-nop"     % "2.0.0-alpha1",
+        ),
+        flywayUrl := schemaUpdateDbUrl.value,
+        // flywayMigrate depends on flywayClasspath which is dynamic task that
+        // triggers compile (via fullClasspath) if any of flywayLocations entries
+        // is a classpath entry
+        // (https://github.com/flyway/flyway-sbt/issues/10)
+        flywayLocations := schemaUpdateMigrations.value.map(loc =>
+          s"filesystem:${loc}",
         ),
       )
 

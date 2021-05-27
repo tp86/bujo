@@ -52,15 +52,12 @@ lazy val schemas = (project in file("repository/schemas"))
   .settings(
     name := "bujo-schemas",
     scalaVersion := "2.13.5",
-    // flywayMigrate depends on flywayClasspath which is dynamic task that
-    // triggers compile (via fullClasspath) if any of flywayLocations entries
-    // is a classpath entry
-    // (https://github.com/flyway/flyway-sbt/issues/10)
-    flywayLocations := Seq(
-      s"filesystem:${(baseDirectory.value / "migrations").getPath}",
-    ),
-    flywayUrl := s"""jdbc:h2:file:${(baseDirectory.value / "db/bujo.db").getPath}""",
-    schemaUpdateDbProfile := SchemaUpdater.H2Profile,
     libraryDependencies ++= schemasDeps,
+    schemaUpdateMigrations := Seq(
+      (baseDirectory.value / ".." / "migrations").getPath,
+    ),
+    cleanFiles += baseDirectory.value,
+    schemaUpdateDbUrl := s"""jdbc:h2:file:${(baseDirectory.value / "db/bujo.db").getPath}""",
+    schemaUpdateDbProfile := SchemaUpdater.H2Profile,
     schemaUpdateOutputPackage := "bujo.repository.schema",
   )
