@@ -43,18 +43,15 @@ lazy val repo = (project in file("repository"))
     name := "bujo-repository",
   )
 
-lazy val schemasDeps = Seq(
-  h2,
-)
-
 lazy val schemas = (project in file("repository/schemas"))
   .enablePlugins(SchemaUpdater)
   .settings(
     name := "bujo-schemas",
+    description := "Separate subproject to generate schema classes based on migrations.",
     scalaVersion := "2.13.5",
-    libraryDependencies ++= schemasDeps,
+    libraryDependencies += h2,
     schemaUpdateMigrations := Seq(
-      (baseDirectory.value / ".." / "migrations").getPath,
+      (baseDirectory.value / ".." / "migrations").getCanonicalPath,
     ),
     cleanFiles += baseDirectory.value,
     schemaUpdateDbUrl := s"""jdbc:h2:file:${(baseDirectory.value / "db/bujo.db").getPath}""",
