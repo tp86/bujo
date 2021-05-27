@@ -53,8 +53,7 @@ lazy val schemas = (project in file("repository/schemas"))
     schemaUpdateMigrations := Seq(
       (baseDirectory.value / ".." / "migrations").getCanonicalPath,
     ),
-    cleanFiles += baseDirectory.value,
-    schemaUpdateDbUrl := s"""jdbc:h2:file:${(baseDirectory.value / "db/bujo.db").getPath}""",
+    schemaUpdateDbUrl := s"""jdbc:h2:file:${(target.value / "db/bujo.db").getPath}""",
     schemaUpdateDbProfile := SchemaUpdater.H2Profile,
     schemaUpdateOutputPackage := "bujo.repository.schema",
   )
