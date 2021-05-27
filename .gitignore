@@ -6,5 +6,4 @@ target/
 .bloop/
 .metals/
 project/**/metals.sbt
-/db/
-/.repo/
+db/

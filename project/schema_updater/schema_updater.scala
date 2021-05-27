@@ -42,15 +42,14 @@ object SchemaUpdater extends AutoPlugin {
   override lazy val projectSettings =
     schemaUpdateDefaults ++
       inConfig(Compile)(schemaUpdateDefaults) ++
-      inConfig(Test)(schemaUpdateDefaults) ++
       Seq(
-        Compile / schemaUpdate := {
-          val _ = (Compile / flywayMigrate).value
+        schemaUpdate := {
+          val _ = flywayMigrate.value
           generateSchema(
             Config(
-              (Compile / schemaUpdateDbUrl).value,
-              (Compile / schemaUpdateDbProfile).value,
-              (Compile / schemaUpdateOutputPackage).value,
+              schemaUpdateDbUrl.value,
+              schemaUpdateDbProfile.value,
+              schemaUpdateOutputPackage.value,
             ),
             (Compile / dependencyClasspath).value,
             (Compile / sourceManaged).value,
@@ -58,27 +57,8 @@ object SchemaUpdater extends AutoPlugin {
             streams.value.log,
           )
         },
-        Test / schemaUpdate := {
-          val _ = (Test / flywayMigrate).value
-          generateSchema(
-            Config(
-              (Test / schemaUpdateDbUrl).value,
-              (Test / schemaUpdateDbProfile).value,
-              (Test / schemaUpdateOutputPackage).value,
-            ),
-            (Test / dependencyClasspath).value,
-            (Test / sourceManaged).value,
-            runner.value,
-            streams.value.log,
-          )
-        },
         Compile / sourceGenerators += Compile / schemaUpdate,
-        Test / sourceGenerators += Test / schemaUpdate,
-        Compile / schemaUpdateDbUrl := (Compile / flywayUrl).value,
-        Test / schemaUpdateDbUrl := (Test / flywayUrl).value,
-        Test / flywayLocations := flywayLocations.value,
-        Compile / schemaUpdateOutputPackage := schemaUpdateOutputPackage.value,
-        Test / schemaUpdateOutputPackage := schemaUpdateOutputPackage.value,
+        schemaUpdateDbUrl := flywayUrl.value,
         libraryDependencies ++= Seq(
           "com.typesafe.slick" %% "slick-codegen" % "3.3.3",
           "org.slf4j"           % "slf4j-nop"     % "2.0.0-alpha1",
