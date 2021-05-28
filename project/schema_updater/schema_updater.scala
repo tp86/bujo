@@ -29,6 +29,8 @@ object SchemaUpdater extends AutoPlugin {
       schemaUpdateDbProfile := H2Profile,
       schemaUpdateOutputPackage := "generated.schema",
     )
+
+    val testTask = taskKey[Unit]("Test conditional task.")
   }
 
   import autoImport._
@@ -39,23 +41,46 @@ object SchemaUpdater extends AutoPlugin {
 
   object H2Profile extends DbProfile("org.h2.Driver", "slick.jdbc.H2Profile")
 
+  private var dynTrigger: Boolean = false
+
+  private def dynamicTask = Def.taskDyn {
+    if (dynTrigger) {
+      flywayMigrate
+    } else Def.task { () }
+  }
+
   override lazy val projectSettings =
     schemaUpdateDefaults ++
       inConfig(Compile)(schemaUpdateDefaults) ++
       Seq(
         schemaUpdate := {
-          val _ = flywayMigrate.value
-          generateSchema(
-            Config(
-              schemaUpdateDbUrl.value,
-              schemaUpdateDbProfile.value,
-              schemaUpdateOutputPackage.value,
-            ),
-            (Compile / dependencyClasspath).value,
-            (Compile / sourceManaged).value,
-            runner.value,
-            streams.value.log,
-          )
+          import sbt.util.CacheImplicits.{seqFormat => _, _}
+          val previous          = schemaUpdate.previous
+          val mainClassRunner   = runner.value
+          val logger            = streams.value.log
+          val cacheStoreFactory = streams.value.cacheStoreFactory
+          val cachedSchemaUpdate =
+            Tracked.inputChanged[HashFileInfo, Seq[File]](
+              cacheStoreFactory.make("migrations"),
+            ) { (changed: Boolean, _: HashFileInfo) =>
+              dynTrigger = changed || previous.isEmpty
+              if (dynTrigger) {
+                (dynamicTask.value: @sbtUnchecked)
+                generateSchema(
+                  Config(
+                    schemaUpdateDbUrl.value,
+                    schemaUpdateDbProfile.value,
+                    schemaUpdateOutputPackage.value,
+                  ),
+                  (Compile / dependencyClasspath).value,
+                  (Compile / sourceManaged).value,
+                  mainClassRunner,
+                  logger,
+                )
+              } else previous.get
+            }
+          val fileInfo = FileInfo.hash(schemaUpdateMigrations.value)
+          cachedSchemaUpdate(fileInfo)
         },
         Compile / sourceGenerators += Compile / schemaUpdate,
         libraryDependencies ++= Seq(
@@ -71,6 +96,12 @@ object SchemaUpdater extends AutoPlugin {
         flywayLocations := Seq(
           s"filesystem:${schemaUpdateMigrations.value.getCanonicalPath}",
         ),
+        testTask := {
+          if (true)
+            flywayMigrate.value
+          else
+            ()
+        },
       )
 
   private case class Config(
