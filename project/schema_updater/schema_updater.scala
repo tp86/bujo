@@ -27,8 +27,8 @@ object SchemaUpdater extends AutoPlugin {
 
     lazy val schemaUpdateDefaults: Seq[Def.Setting[_]] = Seq(
       schemaUpdateMigrations := Seq("migrations"),
-      schemaUpdateDbUrl := "",
-      schemaUpdateDbProfile := EmptyProfile,
+      schemaUpdateDbUrl := s"""jdbc:h2:file:${(target.value / "db/bujo.db").getPath}""",
+      schemaUpdateDbProfile := H2Profile,
       schemaUpdateOutputPackage := "generated.schema",
     )
   }
@@ -39,10 +39,7 @@ object SchemaUpdater extends AutoPlugin {
       driver: String,
       profile: String)
 
-  private object EmptyProfile extends DbProfile("", "")
-  object H2Profile            extends DbProfile("org.h2.Driver", "slick.jdbc.H2Profile")
-  object SqliteProfile
-      extends DbProfile("org.sqlite.JDBC", "slick.jdbc.SQLiteProfile")
+  object H2Profile extends DbProfile("org.h2.Driver", "slick.jdbc.H2Profile")
 
   override lazy val projectSettings =
     schemaUpdateDefaults ++
@@ -63,10 +60,10 @@ object SchemaUpdater extends AutoPlugin {
           )
         },
         Compile / sourceGenerators += Compile / schemaUpdate,
-        schemaUpdateDbUrl := flywayUrl.value,
         libraryDependencies ++= Seq(
           "com.typesafe.slick" %% "slick-codegen" % "3.3.3",
           "org.slf4j"           % "slf4j-nop"     % "2.0.0-alpha1",
+          "com.h2database"      % "h2"            % "1.4.200",
         ),
         flywayUrl := schemaUpdateDbUrl.value,
         // flywayMigrate depends on flywayClasspath which is dynamic task that

@@ -49,11 +49,8 @@ lazy val schemas = (project in file("repository/schemas"))
     name := "bujo-schemas",
     description := "Separate subproject to generate schema classes based on migrations.",
     scalaVersion := "2.13.5",
-    libraryDependencies += h2,
     schemaUpdateMigrations := Seq(
       (baseDirectory.value / ".." / "migrations").getCanonicalPath,
     ),
-    schemaUpdateDbUrl := s"""jdbc:h2:file:${(target.value / "db/bujo.db").getPath}""",
-    schemaUpdateDbProfile := SchemaUpdater.H2Profile,
     schemaUpdateOutputPackage := "bujo.repository.schema",
   )
