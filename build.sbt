@@ -1,8 +1,5 @@
 import bloop.integrations.sbt.BloopDefaults
 
-ThisBuild / version := "0.1.0-SNAPSHOT"
-ThisBuild / scalaVersion := "3.0.0-RC2"
-
 lazy val AccTest = config("acceptance-test") extend (Test)
 lazy val accTest = taskKey[Unit]("Executes acceptance tests.")
 
@@ -14,6 +11,8 @@ lazy val bujo = (project in file("."))
   .aggregate(domain, repo, util)
   .settings(
     name := "bujo",
+    ThisBuild / version := "0.1.0-SNAPSHOT",
+    ThisBuild / scalaVersion := "3.0.0-RC2",
   )
 
 lazy val util = project
@@ -49,8 +48,6 @@ lazy val schemas = (project in file("repository/schemas"))
     name := "bujo-schemas",
     description := "Separate subproject to generate schema classes based on migrations.",
     scalaVersion := "2.13.5",
-    schemaUpdateMigrations := Seq(
-      (baseDirectory.value / ".." / "migrations").getCanonicalPath,
-    ),
+    schemaUpdateMigrations := baseDirectory.value / ".." / "migrations",
     schemaUpdateOutputPackage := "bujo.repository.schema",
   )

@@ -5,7 +5,7 @@ lazy val schemaUpdater = (project in file("schema_updater"))
   .enablePlugins(SbtPlugin)
   .settings(
     name := "sbt-schemaupdater",
-    version := "0.2.5",
+    version := "0.2.6-SNAPSHOT",
     versionScheme := Some("semver-spec"),
     organization := "bujo",
     pluginCrossBuild / sbtVersion := {

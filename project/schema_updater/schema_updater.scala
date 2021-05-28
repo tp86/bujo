@@ -16,9 +16,7 @@ object SchemaUpdater extends AutoPlugin {
     val schemaUpdate =
       taskKey[Seq[File]]("Generates schemas based on migrated database.")
     val schemaUpdateMigrations =
-      settingKey[Seq[String]](
-        "Locations (paths as strings) to scan recursively for migrations.",
-      )
+      settingKey[File]("Directory to scan for migrations.")
     val schemaUpdateDbUrl = settingKey[String]("JDBC url to database.")
     val schemaUpdateDbProfile =
       settingKey[DbProfile]("Profile for database.")
@@ -26,7 +24,7 @@ object SchemaUpdater extends AutoPlugin {
       settingKey[String]("Package to generate schema to.")
 
     lazy val schemaUpdateDefaults: Seq[Def.Setting[_]] = Seq(
-      schemaUpdateMigrations := Seq("migrations"),
+      schemaUpdateMigrations := file("migrations"),
       schemaUpdateDbUrl := s"""jdbc:h2:file:${(target.value / "db/bujo.db").getPath}""",
       schemaUpdateDbProfile := H2Profile,
       schemaUpdateOutputPackage := "generated.schema",
@@ -70,8 +68,8 @@ object SchemaUpdater extends AutoPlugin {
         // triggers compile (via fullClasspath) if any of flywayLocations entries
         // is a classpath entry
         // (https://github.com/flyway/flyway-sbt/issues/10)
-        flywayLocations := schemaUpdateMigrations.value.map(loc =>
-          s"filesystem:${loc}",
+        flywayLocations := Seq(
+          s"filesystem:${schemaUpdateMigrations.value.getCanonicalPath}",
         ),
       )
 
