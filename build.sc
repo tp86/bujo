@@ -26,6 +26,7 @@ object util extends Scala3Module
 
 object repo extends Scala3Module with CustomPath {
   def basePath = "repository"
+  def moduleDeps = Seq(schemas)
   object schemas extends AllScalaModule with SchemaUpdateModule {
     def scalaVersion = "2.13.6"
     def schemaUpdateMigrations = T.sources { repo.millSourcePath / "migrations" }
@@ -44,8 +45,24 @@ trait SchemaUpdateModule extends ScalaModule with FlywayModule {
   override def flywayDriverDeps = Agg(
     ivy"com.h2database:h2:1.4.200"
   )
+  def runIvyDeps = Agg(
+    ivy"com.typesafe.slick::slick-codegen:3.3.3",
+    ivy"org.slf4j:slf4j-nop:2.0.0-alpha1",
+  ) ++ flywayDriverDeps()
   def schemaUpdate = T {
-    flywayMigrate()
-    T.log.info("Updating")
+    val NO_MIGRATION_APPLIED = 0
+    if (flywayMigrate()() != NO_MIGRATION_APPLIED) {
+      T.log.info("Updating")
+      runMain(
+        "slick.codegen.SourceCodeGenerator",
+        "slick.jdbc.H2Profile",
+        "org.h2.Driver",
+        schemaUpdateDbUrl(),
+        T.dest.toString,
+        schemaUpdateOutputPackage(),
+      )
+    }
+    PathRef(T.dest)
   }
+  def generatedSources = T.sources { schemaUpdate().path }
 }
