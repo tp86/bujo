@@ -6,10 +6,10 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 abstract class RepositoryTestBase extends AnyFlatSpec
 
-class BasicRepositoryTest extends RepositoryTestBase:
+class BasicRepositoryTest extends RepositoryTestBase {
 
   "Repository" should "be able to access tables in DB" in {
     assert(true)
   }
 
-end BasicRepositoryTest
+}
