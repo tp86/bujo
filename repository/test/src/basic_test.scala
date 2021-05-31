@@ -1,6 +1,6 @@
 package bujo.repository
 
-import bujo.repository.schema.Tables.*
+import bujo.repository.schema.Tables._
 
 import org.scalatest.flatspec.AnyFlatSpec
 
