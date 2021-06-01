@@ -1,8 +1,10 @@
 *.class
 *.log
 
+out/
 target/
 .bsp/
 .bloop/
 .metals/
-project/**/metals.sbt
+/.coursier
+/.coursier/

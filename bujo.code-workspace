@@ -6,12 +6,14 @@
 	],
 	"settings": {
 		"files.watcherExclude": {
-			"**/target": true
+			"**/target": true,
+			"out": true
 		},
 		"files.exclude": {
 			".bloop": true,
 			".bsp": true,
-			".metals": true
+			".metals": true,
+			".coursier": true
 		}
 	}
 }
