@@ -6,5 +6,5 @@ target/
 .bsp/
 .bloop/
 .metals/
-project/**/metals.sbt
-db/
+/.coursier
+/.coursier/

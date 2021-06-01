@@ -14,5 +14,7 @@
 		"coverage-gutters.coverageBaseDir": "target/scala*/jacoco/report",
 		"coverage-gutters.coverageReportFileName": "${coverageBaseDir}/index.html"
 	},
-	"remoteUser": "vscode"
+	"remoteUser": "vscode",
+	// Workaround for Metals not being able to download with coursier issue
+	"postAttachCommand": "mkdir -p ~/.cache/coursier/v1 && ln -sf ~/.cache/coursier/v1 .coursier"
 }
