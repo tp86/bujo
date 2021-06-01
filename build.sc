@@ -67,7 +67,7 @@ trait SchemaUpdateModule extends ScalaModule with FlywayModule {
       compileIvyDeps(),
     )
   }
-  def schemaUpdate = T {
+  def schemaUpdate = T.persistent {
     val NO_MIGRATION_APPLIED = 0
     if (flywayMigrate()() != NO_MIGRATION_APPLIED) {
       T.log.info("Updating")
